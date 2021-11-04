@@ -111,7 +111,7 @@ cleanDat$speciesName <-  paste0(cleanDat$Genus, ".", cleanDat$Species)
 We should look at some distributions of the different data first to have an idea of what we may be dealing with. We can plot a correlogram matrix
 
 
-```{r cars, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(readxl)
 library(tidyverse)
 library(rgl)
@@ -449,12 +449,24 @@ hr <- hrdat %>% dplyr::filter(!is.na(homeRangeMetric)) %>%
   theme_cowplot()+
   theme(legend.position = leg.pos)
 hr <- addSmallLegend(hr)
-hr
 
-method.lm <- lm(homeRange.ha~log(Mass)*homeRangeMetric+Family*homeRangeMetric, data = hrdat)
+#Posthoc tests don't like character variables. Change them to factors
+library(multcomp)
+hrdat$homeRangeMetric <- as.factor(hrdat$homeRangeMetric)
+hrdat$Family <- as.factor(hrdat$Family)
+hrdat$set <- as.factor(hrdat$set)
+
+method.lm <- lm(log(homeRange.ha)~log(Mass)+homeRangeMetric*set+Family, data = hrdat)
 Anova(method.lm)
+#coef(method.lm)
+#cld(glht(method.lm, linfct=mcp(homeRangeMetric="Tukey")))
 ```
-From above, there is no effect of homeRangeMetric on the estimated home range size. So all methods are equally bad :)
+From the ANOVA table above, there is a small effect of `homeRangeMetric` on the estimated home range size. There is no effect of sex (called `set` here) on that home range size, and tehre is still a strong effect of family. So all methods are pretty close to being equally bad :)
+
+The posthoc tests (*not run now*) show that the methods really aren't different from one another (they all are grouped by "a" in the line output). But the biggest differences is between Widest Edge & Kernel, then Widest Edge & MCP, and MCP & Kernel are the most similar for home range. 
+
+
+
 
 ## Some other exploration
 Here are a few plots that will explore whatever data we have on the number of foraging sites, foraging distances, flight distances, speeds, etc.

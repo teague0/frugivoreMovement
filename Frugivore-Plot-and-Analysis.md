@@ -112,7 +112,7 @@ cleanDat$speciesName <-  paste0(cleanDat$Genus, ".", cleanDat$Species)
 We should look at some distributions of the different data first to have an idea of what we may be dealing with. We can plot a correlogram matrix
 
 
-![](Frugivore-Plot-and-Analysis_files/figure-html/cars-1.png)<!-- -->
+![](Frugivore-Plot-and-Analysis_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
 
 
 
@@ -205,7 +205,7 @@ fr <- addSmallLegend(fr)
 plot_grid(hr, fr, cr, cols = 3)
 ```
 
-![](Frugivore-Plot-and-Analysis_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
+![](Frugivore-Plot-and-Analysis_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
 
 I see a few things from these plots.
 **1. Home Range.** It looks like the size of home range scales pretty nicely with body size. There is a phylogenetic shift between the two families -- when we run a model to test this, I'm pretty sure that we will see the same slope of the line that describes how body mass & home range size scale, but that the pteropodids will the shifted down (they'll have a lower y intercept). So, for a given body size pteropodids have *small* home ranges. This is cool! I need to reformat the data to run it through a glm because I think I want to include both the sex-segregated data with the species averages.
@@ -491,7 +491,7 @@ fr <- addSmallLegend(fr)
 plot_grid(hr, fr, cr, cols = 3)
 ```
 
-![](Frugivore-Plot-and-Analysis_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+![](Frugivore-Plot-and-Analysis_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
 
 We see the same patterns as with body mass, so I'm not going to run the individual stats on them for now.. It might be more useful to get other wing measurements like aspect ratio and wing loading since that describes a bit more about the foraging ecology & flight capacity of the animals. But here is forearm length vs body mass
 
@@ -521,7 +521,7 @@ falMassplot <- addSmallLegend(falMassplot)
 falMassplot
 ```
 
-![](Frugivore-Plot-and-Analysis_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+![](Frugivore-Plot-and-Analysis_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
 ```r
 falMassmod <- lm(log(mass.avg)~log(fal.avg)*Family, data = falMass)
@@ -585,31 +585,42 @@ hr <- hrdat %>% dplyr::filter(!is.na(homeRangeMetric)) %>%
   theme_cowplot()+
   theme(legend.position = leg.pos)
 hr <- addSmallLegend(hr)
-hr
-```
 
-![](Frugivore-Plot-and-Analysis_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+#Posthoc tests don't like character variables. Change them to factors
+library(multcomp)
+hrdat$homeRangeMetric <- as.factor(hrdat$homeRangeMetric)
+hrdat$Family <- as.factor(hrdat$Family)
+hrdat$set <- as.factor(hrdat$set)
 
-```r
-method.lm <- lm(homeRange.ha~log(Mass)*homeRangeMetric+Family*homeRangeMetric, data = hrdat)
+method.lm <- lm(log(homeRange.ha)~log(Mass)+homeRangeMetric*set+Family, data = hrdat)
 Anova(method.lm)
 ```
 
 ```
 ## Anova Table (Type II tests)
 ## 
-## Response: homeRange.ha
-##                               Sum Sq Df F value Pr(>F)  
-## log(Mass)                  571085002  1  3.9215 0.0533 .
-## homeRangeMetric            478826421  2  1.6440 0.2037  
-## Family                      66262149  1  0.4550 0.5031  
-## log(Mass):homeRangeMetric  102593063  2  0.3522 0.7049  
-## homeRangeMetric:Family       2249214  1  0.0154 0.9016  
-## Residuals                 7135841127 49                 
+## Response: log(homeRange.ha)
+##                      Sum Sq Df F value    Pr(>F)    
+## log(Mass)           214.615  1 50.8524 5.173e-09 ***
+## homeRangeMetric      23.889  2  2.8303 0.0690868 .  
+## set                   2.118  2  0.2509 0.7791065    
+## Family               64.229  1 15.2190 0.0003036 ***
+## homeRangeMetric:set   5.276  3  0.4167 0.7418233    
+## Residuals           198.356 47                      
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
-From above, there is no effect of homeRangeMetric on the estimated home range size. So all methods are equally bad :)
+
+```r
+#coef(method.lm)
+#cld(glht(method.lm, linfct=mcp(homeRangeMetric="Tukey")))
+```
+From the ANOVA table above, there is a small effect of `homeRangeMetric` on the estimated home range size. There is no effect of sex (called `set` here) on that home range size, and tehre is still a strong effect of family. So all methods are pretty close to being equally bad :)
+
+The posthoc tests (*not run now*) show that the methods really aren't different from one another (they all are grouped by "a" in the line output). But the biggest differences is between Widest Edge & Kernel, then Widest Edge & MCP, and MCP & Kernel are the most similar for home range. 
+
+
+
 
 ## Some other exploration
 Here are a few plots that will explore whatever data we have on the number of foraging sites, foraging distances, flight distances, speeds, etc.
